@@ -52,15 +52,16 @@ The platform is designed following Domain-Driven Design (DDD), Clean Architectur
 - **Payment Service** (Port 5005): Payment aggregate, Sandbox transaction gateway, Transactional Outbox with `PaymentCompletedIntegrationEvent` / `PaymentFailedIntegrationEvent`, refund handling.
 - **Shipping Service** (Port 5007): Shipment aggregate (`Created`, `Dispatched`, `InTransit`, `Delivered`, `Failed`), Tracking number generation (`TRK-...`), Transactional Outbox with `ShipmentCreatedIntegrationEvent`, carrier status advance.
 - **Notification Service** (Port 5008): NotificationLog aggregate, multi-channel support (`Email`, `Sms`), event-based customer notifications (`OrderConfirmation`, `PaymentReceipt`, `ShipmentDispatched`, `OrderCancelled`), delivery audit log.
+- **Saga Orchestrator Service** (Port 5009): Coordinates distributed order-processing workflow with explicit state transitions, compensating transactions (inventory release, order cancellation), manual intervention escalation queue, and tracking endpoints.
 
 ### 3. API Gateway (`src/ApiGateway/`)
-- **OcelotGateway** (Port 5000): Centralized routing, rate limiting, JWT Bearer configuration, CORS policy for Angular. Configured for auth, users, products, categories, cart, inventory, orders, payments, shipping, and notifications.
+- **OcelotGateway** (Port 5000): Centralized routing, rate limiting, JWT Bearer configuration, CORS policy for Angular. Configured for auth, users, products, categories, cart, inventory, orders, payments, shipping, notifications, and saga orchestration.
 
 ---
 
 ## 🧪 Testing
 
-134 unit tests with 100% pass rate:
+149 unit tests with 100% pass rate:
 - `BuildingBlocks.Tests` (12 tests)
 - `Identity.UnitTests` (12 tests)
 - `Product.UnitTests` (19 tests)
@@ -70,6 +71,7 @@ The platform is designed following Domain-Driven Design (DDD), Clean Architectur
 - `Payment.UnitTests` (12 tests)
 - `Shipping.UnitTests` (14 tests)
 - `Notification.UnitTests` (10 tests)
+- `SagaOrchestrator.UnitTests` (15 tests)
 
 Run tests locally:
 ```bash
