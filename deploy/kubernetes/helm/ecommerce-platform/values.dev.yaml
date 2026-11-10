@@ -1,0 +1,115 @@
+# Development / Minikube overlay values
+global:
+  namespace: ecommerce-dev
+  environment: Development
+  imageRegistry: local
+  imagePullPolicy: IfNotPresent
+  imagePullSecrets: []
+
+embeddedDevInfra:
+  enabled: true
+  sqlServer:
+    saPassword: "EnterpriseP@ssw0rd2026!#"
+    storage: 5Gi
+  redis:
+    storage: 1Gi
+
+database:
+  server: "dev-sqlserver"
+  port: 1433
+  user: "sa"
+  secretName: "dev-infra-secrets"
+  secretKey: "sql-password"
+  options: "TrustServerCertificate=True;MultipleActiveResultSets=true;"
+
+serviceBus:
+  connectionString: "InMemory"
+  secretName: ""
+  secretKey: ""
+
+redis:
+  connectionString: "dev-redis:6379"
+  secretName: ""
+  secretKey: ""
+
+jwt:
+  issuer: "ECommercePlatform.IdentityService"
+  audience: "ECommercePlatform"
+  secretName: "dev-infra-secrets"
+  secretKey: "jwt-secret"
+
+identity:
+  replicaCount: 1
+  hpa: { enabled: false }
+  resources: { requests: { cpu: 50m, memory: 128Mi }, limits: { cpu: 200m, memory: 256Mi } }
+
+product:
+  replicaCount: 1
+  hpa: { enabled: false }
+  resources: { requests: { cpu: 50m, memory: 128Mi }, limits: { cpu: 200m, memory: 256Mi } }
+
+cart:
+  replicaCount: 1
+  hpa: { enabled: false }
+  resources: { requests: { cpu: 50m, memory: 128Mi }, limits: { cpu: 200m, memory: 256Mi } }
+
+inventory:
+  replicaCount: 1
+  hpa: { enabled: false }
+  resources: { requests: { cpu: 50m, memory: 128Mi }, limits: { cpu: 200m, memory: 256Mi } }
+
+order:
+  replicaCount: 1
+  hpa: { enabled: false }
+  resources: { requests: { cpu: 50m, memory: 128Mi }, limits: { cpu: 200m, memory: 256Mi } }
+
+payment:
+  replicaCount: 1
+  hpa: { enabled: false }
+  resources: { requests: { cpu: 50m, memory: 128Mi }, limits: { cpu: 200m, memory: 256Mi } }
+
+shipping:
+  replicaCount: 1
+  hpa: { enabled: false }
+  resources: { requests: { cpu: 50m, memory: 128Mi }, limits: { cpu: 200m, memory: 256Mi } }
+
+notification:
+  replicaCount: 1
+  hpa: { enabled: false }
+  resources: { requests: { cpu: 50m, memory: 128Mi }, limits: { cpu: 200m, memory: 256Mi } }
+
+sagaOrchestrator:
+  replicaCount: 1
+  hpa: { enabled: false }
+  resources: { requests: { cpu: 50m, memory: 128Mi }, limits: { cpu: 250m, memory: 384Mi } }
+
+gateway:
+  replicaCount: 1
+  hpa: { enabled: false }
+  resources: { requests: { cpu: 100m, memory: 128Mi }, limits: { cpu: 300m, memory: 384Mi } }
+
+frontend:
+  replicaCount: 1
+  hpa: { enabled: false }
+  resources: { requests: { cpu: 25m, memory: 64Mi }, limits: { cpu: 100m, memory: 128Mi } }
+
+ingress:
+  enabled: true
+  className: "nginx"
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+  hosts:
+    - host: localhost
+      paths:
+        - path: /api/
+          pathType: Prefix
+          service: gateway
+          port: 8080
+        - path: /
+          pathType: Prefix
+          service: frontend
+          port: 80
+  tls: []
+
+podDisruptionBudget:
+  enabled: false

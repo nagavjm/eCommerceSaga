@@ -1,0 +1,29 @@
+{{- $services := list "identity" "product" "cart" "inventory" "order" "payment" "shipping" "notification" "sagaOrchestrator" "gateway" "frontend" -}}
+{{- range $svcName := $services -}}
+{{- $svcValues := index $.Values $svcName -}}
+{{- if and $svcValues $svcValues.hpa $svcValues.hpa.enabled }}
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ if eq $svcName "sagaOrchestrator" }}saga-orchestrator-api{{ else if eq $svcName "gateway" }}gateway{{ else if eq $svcName "frontend" }}frontend{{ else }}{{ $svcName }}-api{{ end }}-hpa
+  namespace: {{ $.Values.global.namespace }}
+  labels:
+    app.kubernetes.io/name: {{ if eq $svcName "sagaOrchestrator" }}saga-orchestrator-api{{ else if eq $svcName "gateway" }}gateway{{ else if eq $svcName "frontend" }}frontend{{ else }}{{ $svcName }}-api{{ end }}
+    {{- include "ecommerce.labels" $ | nindent 4 }}
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ if eq $svcName "sagaOrchestrator" }}saga-orchestrator-api{{ else if eq $svcName "gateway" }}gateway{{ else if eq $svcName "frontend" }}frontend{{ else }}{{ $svcName }}-api{{ end }}
+  minReplicas: {{ $svcValues.hpa.minReplicas }}
+  maxReplicas: {{ $svcValues.hpa.maxReplicas }}
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: {{ $svcValues.hpa.targetCPU | default 70 }}
+{{- end }}
+{{- end }}

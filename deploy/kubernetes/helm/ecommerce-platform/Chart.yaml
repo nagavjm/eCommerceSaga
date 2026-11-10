@@ -1,0 +1,16 @@
+apiVersion: v2
+name: ecommerce-platform
+description: Production-grade Helm chart for Enterprise E-Commerce Microservices Platform on Azure Kubernetes Service (AKS)
+type: application
+version: 1.0.0
+appVersion: "1.0.0"
+keywords:
+  - ecommerce
+  - microservices
+  - saga-pattern
+  - dotnet9
+  - angular19
+  - aks
+maintainers:
+  - name: Architecture Team
+    email: devops@enterprise-ecommerce.com

@@ -1,0 +1,269 @@
+# Default values for ecommerce-platform Helm Chart
+global:
+  namespace: ecommerce
+  environment: Production
+  imageRegistry: myregistry.azurecr.io
+  imagePullPolicy: IfNotPresent
+  imagePullSecrets:
+    - name: acr-secret
+
+# -------------------------------------------------------------
+# Shared Infrastructure Configurations
+# -------------------------------------------------------------
+database:
+  server: "sqlserver.database.windows.net"
+  port: 1433
+  user: "sqladmin"
+  secretName: "ecommerce-secrets"
+  secretKey: "sql-password"
+  options: "TrustServerCertificate=True;MultipleActiveResultSets=true;"
+
+serviceBus:
+  connectionString: ""
+  secretName: "ecommerce-secrets"
+  secretKey: "servicebus-connection-string"
+
+redis:
+  connectionString: "ecommerce-redis.redis.cache.windows.net:6380,ssl=True,abortConnect=False"
+  secretName: "ecommerce-secrets"
+  secretKey: "redis-connection-string"
+
+jwt:
+  issuer: "ECommercePlatform.IdentityService"
+  audience: "ECommercePlatform"
+  secretName: "ecommerce-secrets"
+  secretKey: "jwt-secret"
+
+# Embedded dev infrastructure (disabled in prod values)
+embeddedDevInfra:
+  enabled: false
+
+# -------------------------------------------------------------
+# Microservices Defaults
+# -------------------------------------------------------------
+identity:
+  replicaCount: 2
+  image:
+    repository: ecommerce/identity-api
+    tag: 1.0.0
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  hpa:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 6
+    targetCPU: 75
+
+product:
+  replicaCount: 2
+  image:
+    repository: ecommerce/product-api
+    tag: 1.0.0
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  hpa:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 8
+    targetCPU: 70
+
+cart:
+  replicaCount: 2
+  image:
+    repository: ecommerce/cart-api
+    tag: 1.0.0
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  hpa:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 6
+    targetCPU: 75
+
+inventory:
+  replicaCount: 2
+  image:
+    repository: ecommerce/inventory-api
+    tag: 1.0.0
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  hpa:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 10
+    targetCPU: 70
+
+order:
+  replicaCount: 2
+  image:
+    repository: ecommerce/order-api
+    tag: 1.0.0
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  hpa:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 10
+    targetCPU: 70
+
+payment:
+  replicaCount: 2
+  image:
+    repository: ecommerce/payment-api
+    tag: 1.0.0
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  hpa:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 6
+    targetCPU: 75
+
+shipping:
+  replicaCount: 2
+  image:
+    repository: ecommerce/shipping-api
+    tag: 1.0.0
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  hpa:
+    enabled: false
+
+notification:
+  replicaCount: 2
+  image:
+    repository: ecommerce/notification-api
+    tag: 1.0.0
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  hpa:
+    enabled: false
+
+sagaOrchestrator:
+  replicaCount: 2
+  image:
+    repository: ecommerce/saga-orchestrator-api
+    tag: 1.0.0
+  resources:
+    requests:
+      cpu: 150m
+      memory: 384Mi
+    limits:
+      cpu: 600m
+      memory: 768Mi
+  hpa:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 8
+    targetCPU: 70
+
+gateway:
+  replicaCount: 2
+  image:
+    repository: ecommerce/ocelot-gateway
+    tag: 1.0.0
+  resources:
+    requests:
+      cpu: 200m
+      memory: 384Mi
+    limits:
+      cpu: 800m
+      memory: 768Mi
+  hpa:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 12
+    targetCPU: 70
+
+frontend:
+  replicaCount: 2
+  image:
+    repository: ecommerce/ecommerce-frontend
+    tag: 1.0.0
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      cpu: 200m
+      memory: 256Mi
+  hpa:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 6
+    targetCPU: 80
+
+# -------------------------------------------------------------
+# Ingress Configuration (NGINX / AGIC)
+# -------------------------------------------------------------
+ingress:
+  enabled: true
+  className: "nginx"
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/proxy-body-size: "16m"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "60"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "60"
+  hosts:
+    - host: ecommerce.enterprise.com
+      paths:
+        - path: /api/
+          pathType: Prefix
+          service: gateway
+          port: 8080
+        - path: /
+          pathType: Prefix
+          service: frontend
+          port: 80
+  tls:
+    - secretName: ecommerce-tls-cert
+      hosts:
+        - ecommerce.enterprise.com
+
+# -------------------------------------------------------------
+# Pod Disruption Budget
+# -------------------------------------------------------------
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 1

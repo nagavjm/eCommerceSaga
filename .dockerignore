@@ -1,0 +1,15 @@
+**/.git
+**/.github
+**/.vs
+**/.vscode
+**/.gemini
+**/bin
+**/obj
+**/TestResults
+**/node_modules
+**/dist
+**/*.user
+**/*.suo
+tests/
+*.md
+.gitignore

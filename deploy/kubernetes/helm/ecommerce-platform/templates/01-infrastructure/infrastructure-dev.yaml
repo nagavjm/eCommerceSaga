@@ -1,0 +1,119 @@
+{{- if .Values.embeddedDevInfra.enabled }}
+apiVersion: v1
+kind: Secret
+metadata:
+  name: dev-infra-secrets
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "ecommerce.labels" . | nindent 4 }}
+type: Opaque
+stringData:
+  sql-password: {{ .Values.embeddedDevInfra.sqlServer.saPassword | default "EnterpriseP@ssw0rd2026!#" | quote }}
+  jwt-secret: "EnterpriseECommercePlatformUltraSecureJwtSecretKey2026!#*"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dev-sqlserver
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    app.kubernetes.io/name: dev-sqlserver
+    {{- include "ecommerce.labels" . | nindent 4 }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: dev-sqlserver
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: dev-sqlserver
+    spec:
+      containers:
+        - name: sqlserver
+          image: mcr.microsoft.com/mssql/server:2022-latest
+          env:
+            - name: ACCEPT_EULA
+              value: "Y"
+            - name: MSSQL_SA_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: dev-infra-secrets
+                  key: sql-password
+          ports:
+            - containerPort: 1433
+              name: mssql
+          resources:
+            requests:
+              cpu: 250m
+              memory: 1Gi
+            limits:
+              cpu: 1000m
+              memory: 2Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: dev-sqlserver
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    app.kubernetes.io/name: dev-sqlserver
+    {{- include "ecommerce.labels" . | nindent 4 }}
+spec:
+  type: ClusterIP
+  ports:
+    - port: 1433
+      targetPort: 1433
+      name: mssql
+  selector:
+    app.kubernetes.io/name: dev-sqlserver
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dev-redis
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    app.kubernetes.io/name: dev-redis
+    {{- include "ecommerce.labels" . | nindent 4 }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: dev-redis
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: dev-redis
+    spec:
+      containers:
+        - name: redis
+          image: redis:7-alpine
+          ports:
+            - containerPort: 6379
+              name: redis
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 200m
+              memory: 256Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: dev-redis
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    app.kubernetes.io/name: dev-redis
+    {{- include "ecommerce.labels" . | nindent 4 }}
+spec:
+  type: ClusterIP
+  ports:
+    - port: 6379
+      targetPort: 6379
+      name: redis
+  selector:
+    app.kubernetes.io/name: dev-redis
+{{- end }}

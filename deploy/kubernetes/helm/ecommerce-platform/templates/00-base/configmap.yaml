@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "ecommerce.fullname" . }}-config
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "ecommerce.labels" . | nindent 4 }}
+data:
+  ASPNETCORE_ENVIRONMENT: {{ .Values.global.environment | quote }}
+  ASPNETCORE_HTTP_PORTS: "8080"
+  DB_SERVER: {{ .Values.database.server | quote }}
+  DB_PORT: {{ .Values.database.port | quote }}
+  DB_USER: {{ .Values.database.user | quote }}
+  DB_OPTIONS: {{ .Values.database.options | quote }}
+  JWT_ISSUER: {{ .Values.jwt.issuer | quote }}
+  JWT_AUDIENCE: {{ .Values.jwt.audience | quote }}
+  REDIS_CONNECTION_STRING: {{ .Values.redis.connectionString | quote }}

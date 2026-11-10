@@ -1,0 +1,343 @@
+services:
+  # -------------------------------------------------------------
+  # Infrastructure Services
+  # -------------------------------------------------------------
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: ecommerce-sqlserver
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: "${MSSQL_SA_PASSWORD:-EnterpriseP@ssw0rd2026!#}"
+      MSSQL_PID: "Developer"
+    ports:
+      - "1433:1433"
+    volumes:
+      - mssql_data:/var/opt/mssql
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P \"${MSSQL_SA_PASSWORD:-EnterpriseP@ssw0rd2026!#}\" -C -Q \"SELECT 1\" || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+    networks:
+      - ecommerce-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: ecommerce-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - ecommerce-network
+
+  # -------------------------------------------------------------
+  # Core Microservices
+  # -------------------------------------------------------------
+  identity-api:
+    image: ecommerce/identity-api:latest
+    build:
+      context: .
+      dockerfile: src/Services/Identity/Identity.API/Dockerfile
+    container_name: ecommerce-identity-api
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Docker
+      - ASPNETCORE_HTTP_PORTS=8080
+      - ConnectionStrings__IdentityDb=Server=sqlserver,1433;Database=IdentityDb;User Id=sa;Password=${MSSQL_SA_PASSWORD:-EnterpriseP@ssw0rd2026!#};TrustServerCertificate=True;MultipleActiveResultSets=true;
+      - JwtOptions__SecretKey=${JWT_SECRET_KEY:-EnterpriseECommercePlatformUltraSecureJwtSecretKey2026!#*}
+      - JwtOptions__Issuer=ECommercePlatform.IdentityService
+      - JwtOptions__Audience=ECommercePlatform
+      - AzureServiceBus__ConnectionString=${SERVICEBUS_CONNECTION_STRING:-InMemory}
+    ports:
+      - "5001:8080"
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/health/live || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    networks:
+      - ecommerce-network
+
+  product-api:
+    image: ecommerce/product-api:latest
+    build:
+      context: .
+      dockerfile: src/Services/Product/Product.API/Dockerfile
+    container_name: ecommerce-product-api
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Docker
+      - ASPNETCORE_HTTP_PORTS=8080
+      - ConnectionStrings__ProductDb=Server=sqlserver,1433;Database=ProductDb;User Id=sa;Password=${MSSQL_SA_PASSWORD:-EnterpriseP@ssw0rd2026!#};TrustServerCertificate=True;MultipleActiveResultSets=true;
+      - AzureServiceBus__ConnectionString=${SERVICEBUS_CONNECTION_STRING:-InMemory}
+    ports:
+      - "5002:8080"
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/health/live || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    networks:
+      - ecommerce-network
+
+  cart-api:
+    image: ecommerce/cart-api:latest
+    build:
+      context: .
+      dockerfile: src/Services/Cart/Cart.API/Dockerfile
+    container_name: ecommerce-cart-api
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Docker
+      - ASPNETCORE_HTTP_PORTS=8080
+      - ConnectionStrings__CartDb=Server=sqlserver,1433;Database=CartDb;User Id=sa;Password=${MSSQL_SA_PASSWORD:-EnterpriseP@ssw0rd2026!#};TrustServerCertificate=True;MultipleActiveResultSets=true;
+      - Redis__ConnectionString=${REDIS_CONNECTION_STRING:-redis:6379}
+      - AzureServiceBus__ConnectionString=${SERVICEBUS_CONNECTION_STRING:-InMemory}
+    ports:
+      - "5003:8080"
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/health/live || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    networks:
+      - ecommerce-network
+
+  inventory-api:
+    image: ecommerce/inventory-api:latest
+    build:
+      context: .
+      dockerfile: src/Services/Inventory/Inventory.API/Dockerfile
+    container_name: ecommerce-inventory-api
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Docker
+      - ASPNETCORE_HTTP_PORTS=8080
+      - ConnectionStrings__InventoryDb=Server=sqlserver,1433;Database=ECommerceInventoryDb;User Id=sa;Password=${MSSQL_SA_PASSWORD:-EnterpriseP@ssw0rd2026!#};TrustServerCertificate=True;MultipleActiveResultSets=true;
+      - AzureServiceBus__ConnectionString=${SERVICEBUS_CONNECTION_STRING:-InMemory}
+    ports:
+      - "5006:8080"
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/health/live || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    networks:
+      - ecommerce-network
+
+  order-api:
+    image: ecommerce/order-api:latest
+    build:
+      context: .
+      dockerfile: src/Services/Order/Order.API/Dockerfile
+    container_name: ecommerce-order-api
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Docker
+      - ASPNETCORE_HTTP_PORTS=8080
+      - ConnectionStrings__OrderDb=Server=sqlserver,1433;Database=ECommerceOrderDb;User Id=sa;Password=${MSSQL_SA_PASSWORD:-EnterpriseP@ssw0rd2026!#};TrustServerCertificate=True;MultipleActiveResultSets=true;
+      - AzureServiceBus__ConnectionString=${SERVICEBUS_CONNECTION_STRING:-InMemory}
+    ports:
+      - "5004:8080"
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/health/live || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    networks:
+      - ecommerce-network
+
+  payment-api:
+    image: ecommerce/payment-api:latest
+    build:
+      context: .
+      dockerfile: src/Services/Payment/Payment.API/Dockerfile
+    container_name: ecommerce-payment-api
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Docker
+      - ASPNETCORE_HTTP_PORTS=8080
+      - ConnectionStrings__PaymentDb=Server=sqlserver,1433;Database=ECommercePaymentDb;User Id=sa;Password=${MSSQL_SA_PASSWORD:-EnterpriseP@ssw0rd2026!#};TrustServerCertificate=True;MultipleActiveResultSets=true;
+      - AzureServiceBus__ConnectionString=${SERVICEBUS_CONNECTION_STRING:-InMemory}
+    ports:
+      - "5005:8080"
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/health/live || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    networks:
+      - ecommerce-network
+
+  shipping-api:
+    image: ecommerce/shipping-api:latest
+    build:
+      context: .
+      dockerfile: src/Services/Shipping/Shipping.API/Dockerfile
+    container_name: ecommerce-shipping-api
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Docker
+      - ASPNETCORE_HTTP_PORTS=8080
+      - ConnectionStrings__ShippingDb=Server=sqlserver,1433;Database=ECommerceShippingDb;User Id=sa;Password=${MSSQL_SA_PASSWORD:-EnterpriseP@ssw0rd2026!#};TrustServerCertificate=True;MultipleActiveResultSets=true;
+      - AzureServiceBus__ConnectionString=${SERVICEBUS_CONNECTION_STRING:-InMemory}
+    ports:
+      - "5007:8080"
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/health/live || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    networks:
+      - ecommerce-network
+
+  notification-api:
+    image: ecommerce/notification-api:latest
+    build:
+      context: .
+      dockerfile: src/Services/Notification/Notification.API/Dockerfile
+    container_name: ecommerce-notification-api
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Docker
+      - ASPNETCORE_HTTP_PORTS=8080
+      - ConnectionStrings__NotificationDb=Server=sqlserver,1433;Database=ECommerceNotificationDb;User Id=sa;Password=${MSSQL_SA_PASSWORD:-EnterpriseP@ssw0rd2026!#};TrustServerCertificate=True;MultipleActiveResultSets=true;
+      - AzureServiceBus__ConnectionString=${SERVICEBUS_CONNECTION_STRING:-InMemory}
+    ports:
+      - "5008:8080"
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/health/live || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    networks:
+      - ecommerce-network
+
+  saga-orchestrator-api:
+    image: ecommerce/saga-orchestrator-api:latest
+    build:
+      context: .
+      dockerfile: src/Services/SagaOrchestrator/SagaOrchestrator.API/Dockerfile
+    container_name: ecommerce-saga-orchestrator-api
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Docker
+      - ASPNETCORE_HTTP_PORTS=8080
+      - ConnectionStrings__SagaDb=Server=sqlserver,1433;Database=ECommerceSagaDb;User Id=sa;Password=${MSSQL_SA_PASSWORD:-EnterpriseP@ssw0rd2026!#};TrustServerCertificate=True;MultipleActiveResultSets=true;
+      - AzureServiceBus__ConnectionString=${SERVICEBUS_CONNECTION_STRING:-InMemory}
+    ports:
+      - "5009:8080"
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/health/live || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    networks:
+      - ecommerce-network
+
+  # -------------------------------------------------------------
+  # API Gateway
+  # -------------------------------------------------------------
+  ocelot-gateway:
+    image: ecommerce/ocelot-gateway:latest
+    build:
+      context: .
+      dockerfile: src/ApiGateway/OcelotGateway/Dockerfile
+    container_name: ecommerce-ocelot-gateway
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Docker
+      - ASPNETCORE_HTTP_PORTS=8080
+      - JwtOptions__SecretKey=${JWT_SECRET_KEY:-EnterpriseECommercePlatformUltraSecureJwtSecretKey2026!#*}
+      - JwtOptions__Issuer=ECommercePlatform.IdentityService
+      - JwtOptions__Audience=ECommercePlatform
+    ports:
+      - "5000:8080"
+    depends_on:
+      identity-api:
+        condition: service_healthy
+      product-api:
+        condition: service_healthy
+      order-api:
+        condition: service_healthy
+      payment-api:
+        condition: service_healthy
+      inventory-api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/health/live || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    networks:
+      - ecommerce-network
+
+  # -------------------------------------------------------------
+  # Angular 19 Frontend
+  # -------------------------------------------------------------
+  ecommerce-frontend:
+    image: ecommerce/ecommerce-frontend:latest
+    build:
+      context: src/Frontend/ecommerce-angular
+      dockerfile: Dockerfile
+    container_name: ecommerce-frontend
+    ports:
+      - "4200:80"
+    depends_on:
+      - ocelot-gateway
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost/nginx-health || exit 1"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    networks:
+      - ecommerce-network
+
+# -------------------------------------------------------------
+# Networks and Volumes
+# -------------------------------------------------------------
+networks:
+  ecommerce-network:
+    driver: bridge
+
+volumes:
+  mssql_data:
+    driver: local
+  redis_data:
+    driver: local

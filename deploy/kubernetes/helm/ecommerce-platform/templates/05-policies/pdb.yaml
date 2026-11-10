@@ -1,0 +1,19 @@
+{{- if .Values.podDisruptionBudget.enabled }}
+{{- $services := list "identity-api" "product-api" "cart-api" "inventory-api" "order-api" "payment-api" "shipping-api" "notification-api" "saga-orchestrator-api" "gateway" "frontend" -}}
+{{- range $svc := $services }}
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ $svc }}-pdb
+  namespace: {{ $.Values.global.namespace }}
+  labels:
+    app.kubernetes.io/name: {{ $svc }}
+    {{- include "ecommerce.labels" $ | nindent 4 }}
+spec:
+  minAvailable: {{ $.Values.podDisruptionBudget.minAvailable | default 1 }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ $svc }}
+{{- end }}
+{{- end }}
