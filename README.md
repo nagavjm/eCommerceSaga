@@ -50,15 +50,17 @@ The platform is designed following Domain-Driven Design (DDD), Clean Architectur
 - **Inventory Service** (Port 5006): InventoryItem aggregate (Reserve, Release, CommitDeduction, Restock), atomic pre-reservation validation.
 - **Order Service** (Port 5004): Order aggregate (`Pending`, `StockReserved`, `Paid`, `Confirmed`, `Cancelled`, `Shipped`), Transactional Outbox with `OrderPlacedIntegrationEvent`, returns `202 Accepted` for async Saga tracking.
 - **Payment Service** (Port 5005): Payment aggregate, Sandbox transaction gateway, Transactional Outbox with `PaymentCompletedIntegrationEvent` / `PaymentFailedIntegrationEvent`, refund handling.
+- **Shipping Service** (Port 5007): Shipment aggregate (`Created`, `Dispatched`, `InTransit`, `Delivered`, `Failed`), Tracking number generation (`TRK-...`), Transactional Outbox with `ShipmentCreatedIntegrationEvent`, carrier status advance.
+- **Notification Service** (Port 5008): NotificationLog aggregate, multi-channel support (`Email`, `Sms`), event-based customer notifications (`OrderConfirmation`, `PaymentReceipt`, `ShipmentDispatched`, `OrderCancelled`), delivery audit log.
 
 ### 3. API Gateway (`src/ApiGateway/`)
-- **OcelotGateway** (Port 5000): Centralized routing, rate limiting, JWT Bearer configuration, CORS policy for Angular.
+- **OcelotGateway** (Port 5000): Centralized routing, rate limiting, JWT Bearer configuration, CORS policy for Angular. Configured for auth, users, products, categories, cart, inventory, orders, payments, shipping, and notifications.
 
 ---
 
 ## 🧪 Testing
 
-110 unit tests with 100% pass rate:
+134 unit tests with 100% pass rate:
 - `BuildingBlocks.Tests` (12 tests)
 - `Identity.UnitTests` (12 tests)
 - `Product.UnitTests` (19 tests)
@@ -66,6 +68,8 @@ The platform is designed following Domain-Driven Design (DDD), Clean Architectur
 - `Inventory.UnitTests` (24 tests)
 - `Order.UnitTests` (17 tests)
 - `Payment.UnitTests` (12 tests)
+- `Shipping.UnitTests` (14 tests)
+- `Notification.UnitTests` (10 tests)
 
 Run tests locally:
 ```bash
