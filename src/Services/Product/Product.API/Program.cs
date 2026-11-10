@@ -1,4 +1,5 @@
 using BuildingBlocks.Observability;
+using BuildingBlocks.Observability.HealthChecks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
 using Product.Application;
@@ -16,7 +17,7 @@ builder.Services.AddSwaggerGen(c =>
 
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
-builder.Services.AddObservability();
+builder.Services.AddObservability(builder.Configuration, "Product.API");
 
 var app = builder.Build();
 
@@ -42,5 +43,6 @@ using (var scope = app.Services.CreateScope())
 
 app.UseObservability();
 app.MapControllers();
+app.MapCustomHealthChecks();
 
 app.Run();

@@ -1,4 +1,5 @@
 using BuildingBlocks.Observability;
+using BuildingBlocks.Observability.HealthChecks;
 using Cart.Application;
 using Cart.Infrastructure;
 using Cart.Infrastructure.Persistence;
@@ -16,7 +17,7 @@ builder.Services.AddSwaggerGen(c =>
 
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
-builder.Services.AddObservability();
+builder.Services.AddObservability(builder.Configuration, "Cart.API");
 
 var app = builder.Build();
 
@@ -41,5 +42,6 @@ using (var scope = app.Services.CreateScope())
 
 app.UseObservability();
 app.MapControllers();
+app.MapCustomHealthChecks();
 
 app.Run();

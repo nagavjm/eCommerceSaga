@@ -1,5 +1,6 @@
 using System.Text;
 using BuildingBlocks.Observability;
+using BuildingBlocks.Observability.HealthChecks;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Ocelot.DependencyInjection;
@@ -53,7 +54,7 @@ builder.Services.AddCors(options =>
     });
 });
 
-builder.Services.AddObservability();
+builder.Services.AddObservability(builder.Configuration, "OcelotGateway");
 builder.Services.AddOcelot(builder.Configuration);
 
 var app = builder.Build();
@@ -62,6 +63,7 @@ app.UseCors("CorsPolicy");
 app.UseObservability();
 app.UseAuthentication();
 app.UseAuthorization();
+app.MapCustomHealthChecks();
 
 await app.UseOcelot();
 

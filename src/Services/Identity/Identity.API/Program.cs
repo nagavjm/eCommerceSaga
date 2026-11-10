@@ -1,4 +1,5 @@
 using BuildingBlocks.Observability;
+using BuildingBlocks.Observability.HealthChecks;
 using Identity.Application;
 using Identity.Infrastructure;
 using Microsoft.OpenApi.Models;
@@ -37,7 +38,7 @@ builder.Services.AddSwaggerGen(c =>
 
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
-builder.Services.AddObservability();
+builder.Services.AddObservability(builder.Configuration, "Identity.API");
 
 var app = builder.Build();
 
@@ -51,5 +52,6 @@ app.UseObservability();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
+app.MapCustomHealthChecks();
 
 app.Run();

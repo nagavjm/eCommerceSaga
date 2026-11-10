@@ -1,5 +1,6 @@
 using BuildingBlocks.Messaging;
 using BuildingBlocks.Observability;
+using BuildingBlocks.Observability.HealthChecks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
 using SagaOrchestrator.API.Consumers;
@@ -36,7 +37,7 @@ builder.Services.AddSwaggerGen(c =>
 
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
-builder.Services.AddObservability();
+builder.Services.AddObservability(builder.Configuration, "SagaOrchestrator.API");
 builder.Services.AddMessaging(builder.Configuration);
 builder.Services.AddOutboxStore<SagaDbContext>();
 builder.Services.AddInboxStore<SagaDbContext>();
@@ -65,5 +66,6 @@ using (var scope = app.Services.CreateScope())
 
 app.UseObservability();
 app.MapControllers();
+app.MapCustomHealthChecks();
 
 app.Run();

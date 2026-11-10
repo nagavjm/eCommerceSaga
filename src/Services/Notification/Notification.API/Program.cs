@@ -1,5 +1,6 @@
 using BuildingBlocks.Messaging;
 using BuildingBlocks.Observability;
+using BuildingBlocks.Observability.HealthChecks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
 using Notification.API.Consumers;
@@ -36,7 +37,7 @@ builder.Services.AddSwaggerGen(c =>
 
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
-builder.Services.AddObservability();
+builder.Services.AddObservability(builder.Configuration, "Notification.API");
 builder.Services.AddMessaging(builder.Configuration);
 builder.Services.AddOutboxStore<NotificationDbContext>();
 builder.Services.AddInboxStore<NotificationDbContext>();
@@ -65,5 +66,6 @@ using (var scope = app.Services.CreateScope())
 
 app.UseObservability();
 app.MapControllers();
+app.MapCustomHealthChecks();
 
 app.Run();
