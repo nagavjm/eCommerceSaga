@@ -1,3 +1,4 @@
+using BuildingBlocks.Messaging.Inbox;
 using BuildingBlocks.Messaging.Outbox;
 using Microsoft.EntityFrameworkCore;
 using Payment.Application.Common.Interfaces;
@@ -12,6 +13,7 @@ public class PaymentDbContext : DbContext, IPaymentDbContext
 
     public DbSet<Domain.Entities.Payment> Payments => Set<Domain.Entities.Payment>();
     public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
+    public DbSet<InboxMessage> InboxMessages => Set<InboxMessage>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -70,6 +72,15 @@ public class PaymentDbContext : DbContext, IPaymentDbContext
 
             builder.Property(m => m.OccurredOnUtc)
                 .IsRequired();
+        });
+
+        modelBuilder.Entity<InboxMessage>(builder =>
+        {
+            builder.ToTable("InboxMessages");
+            builder.HasKey(m => new { m.Id, m.HandlerName });
+            builder.Property(m => m.Id).ValueGeneratedNever();
+            builder.Property(m => m.HandlerName).HasMaxLength(200);
+            builder.Property(m => m.ReceivedOnUtc).IsRequired();
         });
     }
 }

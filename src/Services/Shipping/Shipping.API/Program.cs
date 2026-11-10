@@ -1,6 +1,8 @@
+using BuildingBlocks.Messaging;
 using BuildingBlocks.Observability;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
+using Shipping.API.Consumers;
 using Shipping.Application;
 using Shipping.Infrastructure;
 using Shipping.Infrastructure.Persistence;
@@ -35,6 +37,10 @@ builder.Services.AddSwaggerGen(c =>
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddObservability();
+builder.Services.AddMessaging(builder.Configuration);
+builder.Services.AddOutboxStore<ShippingDbContext>();
+builder.Services.AddInboxStore<ShippingDbContext>();
+builder.Services.AddHostedService<ShippingMessageConsumerWorker>();
 
 var app = builder.Build();
 

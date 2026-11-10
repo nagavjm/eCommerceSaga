@@ -1,4 +1,6 @@
+using BuildingBlocks.Messaging;
 using BuildingBlocks.Observability;
+using Inventory.API.Consumers;
 using Inventory.Application;
 using Inventory.Infrastructure;
 using Inventory.Infrastructure.Persistence;
@@ -34,6 +36,10 @@ builder.Services.AddSwaggerGen(c =>
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddObservability();
+builder.Services.AddMessaging(builder.Configuration);
+builder.Services.AddOutboxStore<InventoryDbContext>();
+builder.Services.AddInboxStore<InventoryDbContext>();
+builder.Services.AddHostedService<InventoryMessageConsumerWorker>();
 
 var app = builder.Build();
 

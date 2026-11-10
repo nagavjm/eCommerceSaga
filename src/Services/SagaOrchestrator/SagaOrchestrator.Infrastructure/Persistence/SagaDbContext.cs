@@ -1,3 +1,4 @@
+using BuildingBlocks.Messaging.Inbox;
 using BuildingBlocks.Messaging.Outbox;
 using Microsoft.EntityFrameworkCore;
 using SagaOrchestrator.Application.Common.Interfaces;
@@ -13,6 +14,7 @@ public class SagaDbContext : DbContext, ISagaDbContext
 
     public DbSet<OrderSagaState> SagaStates => Set<OrderSagaState>();
     public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
+    public DbSet<InboxMessage> InboxMessages => Set<InboxMessage>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -86,6 +88,15 @@ public class SagaDbContext : DbContext, ISagaDbContext
 
             builder.Property(m => m.OccurredOnUtc)
                 .IsRequired();
+        });
+
+        modelBuilder.Entity<InboxMessage>(builder =>
+        {
+            builder.ToTable("InboxMessages");
+            builder.HasKey(m => new { m.Id, m.HandlerName });
+            builder.Property(m => m.Id).ValueGeneratedNever();
+            builder.Property(m => m.HandlerName).HasMaxLength(200);
+            builder.Property(m => m.ReceivedOnUtc).IsRequired();
         });
     }
 }

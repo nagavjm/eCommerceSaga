@@ -1,6 +1,8 @@
+using BuildingBlocks.Messaging;
 using BuildingBlocks.Observability;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
+using SagaOrchestrator.API.Consumers;
 using SagaOrchestrator.Application;
 using SagaOrchestrator.Infrastructure;
 using SagaOrchestrator.Infrastructure.Persistence;
@@ -35,6 +37,10 @@ builder.Services.AddSwaggerGen(c =>
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddObservability();
+builder.Services.AddMessaging(builder.Configuration);
+builder.Services.AddOutboxStore<SagaDbContext>();
+builder.Services.AddInboxStore<SagaDbContext>();
+builder.Services.AddHostedService<SagaMessageConsumerWorker>();
 
 var app = builder.Build();
 

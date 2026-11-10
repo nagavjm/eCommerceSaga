@@ -1,6 +1,8 @@
+using BuildingBlocks.Messaging;
 using BuildingBlocks.Observability;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
+using Order.API.Consumers;
 using Order.Application;
 using Order.Infrastructure;
 using Order.Infrastructure.Persistence;
@@ -35,6 +37,10 @@ builder.Services.AddSwaggerGen(c =>
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddObservability();
+builder.Services.AddMessaging(builder.Configuration);
+builder.Services.AddOutboxStore<OrderDbContext>();
+builder.Services.AddInboxStore<OrderDbContext>();
+builder.Services.AddHostedService<OrderMessageConsumerWorker>();
 
 var app = builder.Build();
 
